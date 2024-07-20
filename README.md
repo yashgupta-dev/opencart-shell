@@ -15,7 +15,7 @@ Ensure you have the following prerequisites installed:
 
 1. **Create Extension**:
    ```bash
-   ./opencart.sh create-extension <type> <name> [-c]
+   ./vendor/bin/opencart.sh create-extension <type> <name> [-c]
    ```
    - `<type>`: Type of the extension (e.g., module, payment, shipping).
    - `<name>`: Name of the extension (e.g., my_extension_name).
@@ -23,47 +23,47 @@ Ensure you have the following prerequisites installed:
 
 2. **Install Validation Library**:
    ```bash
-   ./opencart.sh install-validation-library
+   ./vendor/bin/opencart.sh install-validation-library
    ```
    - Installs Code Corner's validation library via Composer.
 
 3. **Create Library**:
    ```bash
-   ./opencart.sh create-library <name>
+   ./vendor/bin/opencart.sh create-library <name>
    ```
    - `<name>`: Name of the library to create.
 
 4. **Create Model**:
    ```bash
-   ./opencart.sh create-model <path> <name>
+   ./vendor/bin/opencart.sh create-model <path> <name>
    ```
    - `<path>`: Path to store the model (e.g., extension/payment).
    - `<name>`: Name of the model to create.
 
 5. **Create Controller**:
    ```bash
-   ./opencart.sh create-controller <path> <name>
+   ./vendor/bin/opencart.sh create-controller <path> <name>
    ```
    - `<path>`: Path to store the controller (e.g., extension/payment).
    - `<name>`: Name of the controller to create.
 
 6. **Create Language File**:
    ```bash
-   ./opencart.sh create-language <path> <name>
+   ./vendor/bin/opencart.sh create-language <path> <name>
    ```
    - `<path>`: Path to store the language file (e.g., extension/payment).
    - `<name>`: Name of the language file to create.
 
 7. **Create View Template**:
    ```bash
-   ./opencart.sh create-template <path> <name>
+   ./vendor/bin/opencart.sh create-template <path> <name>
    ```
    - `<path>`: Path to store the template (e.g., extension/payment).
    - `<name>`: Name of the template to create.
 
 8. **Create OCMOD XML File**:
    ```bash
-   ./opencart.sh create-ocmod <name> [-z]
+   ./vendor/bin/opencart.sh create-ocmod <name> [-z]
    ```
    - `<name>`: Name of the OCMOD XML file.
    - `[-z]`: Optional flag to create a zip file.
