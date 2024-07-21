@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Function to display success message in green color
+print_success() {
+    echo -e "\e[32m$1\e[0m" # \e[32m sets color to green, \e[0m resets color back to default
+}
+
+# Function to display error message in red color
+print_error() {
+    echo -e "\e[31m$1\e[0m" # \e[31m sets color to red, \e[0m resets color back to default
+}
+
 # Function to prompt for table name
 prompt_for_table_name() {
     local table_name  # Variable to store table name entered by user
@@ -154,9 +164,9 @@ cat <<EOF >> "$ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.p
 EOF
 
 if [ -f "$ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php" ]; then
-    echo "Success:: $ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+    print_success "Success:: $ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 else
-    echo "Failed:: $ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+    print_error "Failed:: $ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 fi
 
 if [ "$CREATE_CATALOG" == "-m" ]; then
@@ -190,9 +200,9 @@ EOF
 fi
 
 if [ -f "$ADMIN_PATH/model/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php" ]; then
-    echo "Success:: $ADMIN_PATH/model/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+    print_success "Success:: $ADMIN_PATH/model/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 else
-    echo "Failed:: $ADMIN_PATH/model/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+    print_error "Failed:: $ADMIN_PATH/model/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 fi
     cat <<EOF > $ADMIN_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php
 <?php
@@ -213,9 +223,9 @@ fi
 EOF
 
 if [ -f "$ADMIN_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php" ]; then
-    echo "Success:: $ADMIN_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+    print_success "Success:: $ADMIN_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 else
-    echo "Failed:: $ADMIN_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+    print_error "Failed:: $ADMIN_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 fi
 
     mkdir -p $ADMIN_PATH/view/template/extension/$EXTENSION_TYPE
@@ -270,9 +280,9 @@ fi
 EOF
 
 if [ -f "$ADMIN_PATH/view/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig" ]; then
-    echo "Success:: $ADMIN_PATH/view/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig"
+    print_success "Success:: $ADMIN_PATH/view/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig"
 else
-    echo "Failed:: $ADMIN_PATH/view/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig"
+    print_error "Failed:: $ADMIN_PATH/view/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig"
 fi
 
 if [ "$CREATE_CATALOG" == '-c' ]; then
@@ -294,9 +304,9 @@ class ControllerExtension${CLASS_NAME_PATH}${CLASS_NAME} extends Controller {
 EOF
 
 if [ -f "$CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php" ]; then
-    echo "Success:: $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+    print_success "Success:: $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 else
-    echo "Failed:: $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+    print_error "Failed:: $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 fi
 
     cat <<EOF > $CATALOG_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php
@@ -306,9 +316,9 @@ fi
 ?>
 EOF
 if [ -f "$CATALOG_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php" ]; then
-    echo "Success:: $CATALOG_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+    print_success "Success:: $CATALOG_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 else
-    echo "Failed:: $CATALOG_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+    print_error "Failed:: $CATALOG_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 fi
     mkdir -p $CATALOG_PATH/view/theme/default/template/extension/$EXTENSION_TYPE
     cat <<EOF > $CATALOG_PATH/view/theme/default/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig
@@ -318,16 +328,16 @@ fi
 </div>
 EOF
 if [ -f "$CATALOG_PATH/view/theme/default/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig" ]; then
-    echo "Success:: $CATALOG_PATH/view/theme/default/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig"
+    print_success "Success:: $CATALOG_PATH/view/theme/default/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig"
 else
-    echo "Failed:: $CATALOG_PATH/view/theme/default/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig"
+    print_error "Failed:: $CATALOG_PATH/view/theme/default/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig"
 fi
 fi
     # Check if file creation was successful
 if [ -f "$ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php" ]; then
     echo "OpenCart extension '$EXTENSION_NAME' created successfully."
 else
-    echo "Failed to create extension $EXTENSION_NAME."
+    print_error "Failed to create extension $EXTENSION_NAME."
 fi
 }
 
@@ -385,7 +395,7 @@ EOF
 if [ -f "${DIR_SYSTEM}library/$EXTENSION_NAME.php" ]; then
     echo "OpenCart library '$EXTENSION_NAME' created successfully."
 else
-    echo "Failed to create library $EXTENSION_NAME."
+    print_error "Failed to create library $EXTENSION_NAME."
 fi
 
 }
@@ -423,7 +433,7 @@ EOF
 if [ -f "${EXTENSION_TYPE}/$EXTENSION_NAME.php" ]; then
     echo "OpenCart library '$EXTENSION_NAME' created successfully."
 else
-    echo "Failed to create model $EXTENSION_NAME."
+    print_error "Failed to create model $EXTENSION_NAME."
 fi
 
 }
@@ -462,7 +472,7 @@ EOF
 if [ -f "${EXTENSION_TYPE}/$EXTENSION_NAME.php" ]; then
     echo "OpenCart library '$EXTENSION_NAME' created successfully."
 else
-    echo "Failed to create controller $EXTENSION_NAME."
+    print_error "Failed to create controller $EXTENSION_NAME."
 fi
 
 }
@@ -499,7 +509,7 @@ EOF
 if [ -f "${EXTENSION_TYPE}/$EXTENSION_NAME.php" ]; then
     echo "OpenCart language '$EXTENSION_NAME' created successfully."
 else
-    echo "Failed to create language $EXTENSION_NAME."
+    print_error "Failed to create language $EXTENSION_NAME."
 fi
 
 }
@@ -567,7 +577,7 @@ EOF
 if [ -f "${EXTENSION_TYPE}/$EXTENSION_NAME.twig" ]; then
     echo "OpenCart template '$EXTENSION_NAME' created successfully."
 else
-    echo "Failed to create template $EXTENSION_NAME."
+    print_error "Failed to create template $EXTENSION_NAME."
 fi
 
 }
@@ -653,7 +663,7 @@ fi
 if [ -f "${DIR_SYSTEM}$EXTENSION_NAME.ocmod.xml" ]; then
     echo "OpenCart ocmod '$EXTENSION_NAME' created successfully."
 else
-    echo "Failed to create ocmod $EXTENSION_NAME."
+    print_error "Failed to create ocmod $EXTENSION_NAME."
 fi
 }
 
