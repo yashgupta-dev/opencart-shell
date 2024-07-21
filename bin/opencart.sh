@@ -1,5 +1,54 @@
 #!/bin/bash
 
+# Function to prompt for table name
+prompt_for_table_name() {
+    local table_name  # Variable to store table name entered by user
+    
+    # Path to your config.php file
+    config_file="config.php"
+    
+    # Use grep to find the line containing DB_PREFIX and then extract the value with sed
+    DB_PREFIX=$(grep "define('DB_PREFIX'" "$config_file" | sed -E "s/.*'([^']+)'.*/\1/")
+
+    # Prompt user to enter table name (without prefix, it will be auto added)
+    read -p "Enter table name (without prefix, it will be auto added): " table_name
+
+    # Combine DB_PREFIX with user-provided table name
+    table_name="${DB_PREFIX}${table_name}"
+
+    # Echo the table name
+    echo "$table_name"
+}
+
+# Function to generate SQL query based on table name and fields
+generate_sql_query() {
+    local table_name="$1"
+    local sql_query=""
+    
+    # Start building SQL query with DB_PREFIX and combined table name
+    sql_query+="CREATE TABLE IF NOT EXISTS \`$table_name\` (\n"
+
+    # Prompt for fields and types until done
+    while true; do
+        read -p "Enter field name (or 'y' to finish): " field_name
+        if [ "$field_name" == "y" ]; then
+            break
+        fi
+
+        read -p "Enter field data type: " field_data_type
+
+        # Append field and type to SQL query with proper newline and indentation
+        sql_query+="  \`$field_name\` $field_data_type,"
+    done
+
+    # Remove the last comma and close the statement
+    sql_query=$(echo -e "$sql_query" | sed '$ s/,$//')
+    sql_query+=") ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;"
+
+    # Echo the generated SQL query
+    echo "$sql_query"
+}
+
 # Function to create directories and files for admin and catalog sides
 create_extension() {
     local EXTENSION_NAME="$2"
@@ -10,14 +59,15 @@ create_extension() {
     
     # Convert extension name to CamelCase for class name
     local CLASS_NAME=$(echo "$EXTENSION_NAME" | sed -e 's/_//g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2)); print $0}')
+    local CLASS_NAME_PATH=$(echo "$EXTENSION_TYPE" | sed -e 's/_//g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2)); print $0}')
     
     local LANGUAGE_NAME=$(echo "$EXTENSION_NAME" | sed -e 's/_/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2)); print $0}')
     
     # Create admin directories and files
-    # mkdir -p $ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME
+    mkdir -p $ADMIN_PATH/controller/extension/$EXTENSION_TYPE
     cat <<EOF > $ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php
 <?php
-class ControllerExtension${CLASS_NAME} extends Controller {
+class ControllerExtension${CLASS_NAME_PATH}${CLASS_NAME} extends Controller {
     private \$error = array();
 
 	public function index() {
@@ -82,13 +132,67 @@ class ControllerExtension${CLASS_NAME} extends Controller {
 
 		return !\$this->error;
 	}
+EOF
+
+# Add installation and uninstallation methods conditionally
+if [ "$CREATE_CATALOG" == "-m" ]; then
+cat <<EOF >> "$ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+    public function install() {
+        \$this->load->model('extension/$EXTENSION_TYPE/$EXTENSION_NAME');
+        \$this->model_extension_${EXTENSION_TYPE}_${EXTENSION_NAME}->install();
+    }
+
+    public function uninstall() {
+        \$this->load->model('extension/$EXTENSION_TYPE/$EXTENSION_NAME');
+        \$this->model_extension_${EXTENSION_TYPE}_${EXTENSION_NAME}->uninstall();
+    }
+EOF
+fi
+cat <<EOF >> "$ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 }
 ?>
 EOF
+
 if [ -f "$ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php" ]; then
     echo "Success:: $ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 else
     echo "Failed:: $ADMIN_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+fi
+
+if [ "$CREATE_CATALOG" == "-m" ]; then
+
+    # Call function to prompt for table name
+    table_name=$(prompt_for_table_name)
+
+    # Call function to generate SQL query based on the table name
+    sql_query=$(generate_sql_query "$table_name")
+
+    mkdir -p $ADMIN_PATH/controller/extension/$EXTENSION_TYPE
+    cat <<EOF > $ADMIN_PATH/model/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php
+<?php
+class ModelExtension${CLASS_NAME_PATH}${CLASS_NAME} extends Model {
+    public function install() {
+        // Your installation code here
+
+        // Read the generated SQL query
+        \$sql = "$sql_query";
+        // Execute SQL query to create table
+        \$this->db->query(\$sql);
+    }
+
+    public function uninstall() {
+        // Your uninstallation code here
+        \$this->db->query("DROP TABLE IF EXISTS \`$table_name\`;");
+    }
+}
+EOF
+
+fi
+
+if [ -f "$ADMIN_PATH/model/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php" ]; then
+    echo "Success:: $ADMIN_PATH/model/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
+else
+    echo "Failed:: $ADMIN_PATH/model/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 fi
     cat <<EOF > $ADMIN_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php
 <?php
@@ -114,7 +218,7 @@ else
     echo "Failed:: $ADMIN_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 fi
 
-    # mkdir -p $ADMIN_PATH/view/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME
+    mkdir -p $ADMIN_PATH/view/template/extension/$EXTENSION_TYPE
     cat <<EOF > $ADMIN_PATH/view/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig
 {{ header }}{{ column_left }}
 <div id="content">
@@ -173,10 +277,10 @@ fi
 
 if [ "$CREATE_CATALOG" == '-c' ]; then
     # Create catalog directories and files
-    # mkdir -p $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME
+    mkdir -p $CATALOG_PATH/controller/extension/$EXTENSION_TYPE
     cat <<EOF > $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php
 <?php
-class ControllerExtension${CLASS_NAME} extends Controller {
+class ControllerExtension${CLASS_NAME_PATH}${CLASS_NAME} extends Controller {
     public function index() {
         \$this->load->language('extension/$EXTENSION_TYPE/$EXTENSION_NAME');
         
@@ -206,7 +310,7 @@ if [ -f "$CATALOG_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.
 else
     echo "Failed:: $CATALOG_PATH/language/en-gb/extension/$EXTENSION_TYPE/$EXTENSION_NAME.php"
 fi
-    # mkdir -p $CATALOG_PATH/view/theme/default/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME
+    mkdir -p $CATALOG_PATH/view/theme/default/template/extension/$EXTENSION_TYPE
     cat <<EOF > $CATALOG_PATH/view/theme/default/template/extension/$EXTENSION_TYPE/$EXTENSION_NAME.twig
 <div class="well well-sm">
     <h3>{{ heading_title }}</h3>
@@ -259,7 +363,7 @@ create_library() {
     # Use grep to find the line containing DIR_SYSTEM and then extract the value with sed
     DIR_SYSTEM=$(grep "define('DIR_SYSTEM'" "$config_file" | sed -E "s/.*'([^']+)'.*/\1/")
     # Create catalog directories and files
-    # mkdir -p $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME
+    mkdir -p $DIR_SYSTEM/library/$EXTENSION_TYPE
     cat <<EOF > ${DIR_SYSTEM}library/$EXTENSION_NAME.php
 <?php
 class $CLASS_NAME {
@@ -306,7 +410,7 @@ create_model() {
 
     EXTENSION_FINAL_CLASS=$(echo "$CLEANED_EXTENSION_TYPE" | sed -e 's/_/ /g' | awk '{for(i=1;i<=NF;i++) printf "%s", toupper(substr($i,1,1)) tolower(substr($i,2))}')
 
-    # mkdir -p $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME
+    mkdir -p $EXTENSION_TYPE
     cat <<EOF > ${EXTENSION_TYPE}/$EXTENSION_NAME.php
 <?php
 class $EXTENSION_FINAL_CLASS${CLASS_NAME} extends Model {
@@ -345,7 +449,7 @@ create_controller() {
     EXTENSION_FINAL_CLASS=$(echo "$CLEANED_EXTENSION_TYPE" | sed -e 's/_/ /g' | awk '{for(i=1;i<=NF;i++) printf "%s", toupper(substr($i,1,1)) tolower(substr($i,2))}')
 
     # Create catalog directories and files
-    # mkdir -p $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME
+    mkdir -p $EXTENSION_TYPE
     cat <<EOF > ${EXTENSION_TYPE}/$EXTENSION_NAME.php
 <?php
 class $EXTENSION_FINAL_CLASS${CLASS_NAME} extends Controller {
@@ -384,7 +488,7 @@ create_language() {
     EXTENSION_FINAL_CLASS=$(echo "$CLEANED_EXTENSION_TYPE" | sed -e 's/_/ /g' | awk '{for(i=1;i<=NF;i++) printf "%s", toupper(substr($i,1,1)) tolower(substr($i,2))}')
 
     # Create catalog directories and files
-    # mkdir -p $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME
+    mkdir -p $EXTENSION_TYPE
     cat <<EOF > ${EXTENSION_TYPE}/$EXTENSION_NAME.php
 <?php
 \$_['heading_title'] = 'Language';
@@ -421,7 +525,7 @@ create_view() {
     EXTENSION_FINAL_CLASS=$(echo "$CLEANED_EXTENSION_TYPE" | sed -e 's/_/ /g' | awk '{for(i=1;i<=NF;i++) printf "%s", toupper(substr($i,1,1)) tolower(substr($i,2))}')
 
     # Create catalog directories and files
-    # mkdir -p $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME
+    mkdir -p $EXTENSION_TYPE
     cat <<EOF > ${EXTENSION_TYPE}/$EXTENSION_NAME.twig
 {{ header }}{{ column_left }}
 <div id="content">
@@ -494,7 +598,7 @@ create_ocmod() {
     # EXTENSION_FINAL_CLASS=$(echo "$CLEANED_EXTENSION_TYPE" | sed -e 's/_/ /g' | awk '{for(i=1;i<=NF;i++) printf "%s", toupper(substr($i,1,1)) tolower(substr($i,2))}')
 
     # Create catalog directories and files
-    # mkdir -p $CATALOG_PATH/controller/extension/$EXTENSION_TYPE/$EXTENSION_NAME
+    # mkdir -p $EXTENSION_TYPE
     if [ "$2" = "-z" ]; then
     cat <<EOF > install.xml
     <?xml version="1.0" encoding="utf-8"?>
@@ -583,7 +687,7 @@ case "$1" in
         # read both
 
         # Call function to create extension with provided name
-        create_extension "$1" "$2" "$3"
+        create_extension "$1" "$2" "$3" "$4"
         ;;
     install-validation-library)
         shift
