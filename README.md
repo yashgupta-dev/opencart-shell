@@ -15,11 +15,12 @@ Ensure you have the following prerequisites installed:
 
 1. **Create Extension**:
    ```bash
-   ./vendor/bin/opencart.sh create-extension <type> <name> [-c]
+   ./vendor/bin/opencart.sh create-extension <type> <name> [-c] [-m]
    ```
    - `<type>`: Type of the extension (e.g., module, payment, shipping).
    - `<name>`: Name of the extension (e.g., my_extension_name).
    - `[-c]`: Optional flag to create catalog-side files.
+   - `[-m]`: Optional flag to create model in admin side with install & unsinstall methods also it will ask to enter table name & fields name & field data type.
 
 2. **Install Validation Library**:
    ```bash
